@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import yt_dlp
 import os
-import json
 
 app = Flask(__name__)
 
@@ -12,11 +11,6 @@ def get_youtube_download_url(url, format_type):
         'noplaylist': True,
         'cookiefile': cookies_file,  # Tambahkan opsi cookies
         'quiet': True,  # Untuk menghindari output yang berlebihan
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',  # Format audio yang diinginkan
-            'preferredquality': '192',  # Kualitas audio
-        }] if format_type == 'audio' else []
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -26,14 +20,16 @@ def get_youtube_download_url(url, format_type):
             # Mendapatkan URL audio yang sudah diproses
             audio_url = None
             for format in info_dict['formats']:
-                if format['acodec'] != 'none':  # Memastikan format audio valid
+                if 'acodec' in format and format['acodec'] != 'none':  # Memastikan format audio valid
                     audio_url = format['url']
                     break
+            if audio_url is None:
+                return jsonify({'error': 'No valid audio format found'}), 404
             return audio_url
         else:
             # Untuk video, kita ambil URL video terbaik
             for format in info_dict['formats']:
-                if format['vcodec'] != 'none':
+                if 'vcodec' in format and format['vcodec'] != 'none':
                     return format['url']  # Link video
 
 @app.route('/')
