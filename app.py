@@ -1,6 +1,6 @@
-import os
 from flask import Flask, request, jsonify, render_template
 import yt_dlp
+import os
 
 app = Flask(__name__)
 
@@ -8,15 +8,21 @@ def get_youtube_download_url(url, format_type):
     ydl_opts = {
         'format': 'bestaudio' if format_type == 'audio' else 'bestvideo+bestaudio',
         'noplaylist': True,
-        'cookiefile': 'cookies.txt'  # Pastikan ini sesuai dengan nama file cookies
+        'cookies': 'cookies.txt',  # Menggunakan file cookies
+        'quiet': True  # Menonaktifkan output log
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        if format_type == 'audio':
-            return info_dict['url']  # Link audio
-        else:
-            return info_dict['url']  # Link video
+        try:
+            info_dict = ydl.extract_info(url, download=False)
+            if format_type == 'audio':
+                return info_dict['formats'][0]['url']  # Ambil URL audio
+            else:
+                return info_dict['formats'][0]['url']  # Ambil URL video
+        except KeyError as e:
+            raise ValueError(f"Failed to extract URL: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"An error occurred: {str(e)}")
 
 @app.route('/')
 def index():
