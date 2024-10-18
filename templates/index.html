@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #download-link {
+            margin-top: 20px;
+        }
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube Video/Audio Downloader</h1>
+    <form id="download-form">
+        <label for="url">Enter YouTube URL:</label>
+        <input type="text" id="url" name="url" required><br><br>
+        
+        <label for="type">Download Type:</label>
+        <select id="type" name="type">
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+        </select><br><br>
+
+        <button type="submit">Get Download Link</button>
+    </form>
+
+    <div id="download-link"></div>
+
+    <script>
+        document.getElementById('download-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const url = document.getElementById('url').value;
+            const type = document.getElementById('type').value;
+            
+            fetch('/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, type })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const downloadLinkDiv = document.getElementById('download-link');
+                if (data.download_url) {
+                    // Buat tombol download
+                    const downloadButton = document.createElement('a');
+                    downloadButton.href = data.download_url;
+                    downloadButton.textContent = `Download ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                    downloadButton.setAttribute('download', '');
+                    downloadButton.style.display = 'block';
+                    downloadButton.style.marginTop = '20px';
+                    downloadButton.style.backgroundColor = '#4CAF50';
+                    downloadButton.style.color = 'white';
+                    downloadButton.style.padding = '10px';
+                    downloadButton.style.textDecoration = 'none';
+                    downloadButton.style.borderRadius = '5px';
+
+                    // Bersihkan link sebelumnya
+                    downloadLinkDiv.innerHTML = '';
+                    downloadLinkDiv.appendChild(downloadButton);
+                } else {
+                    downloadLinkDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('download-link').innerHTML = `<p>Error: ${error}</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
