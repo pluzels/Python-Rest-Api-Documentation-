@@ -7,8 +7,13 @@ app = Flask(__name__)
 
 def get_youtube_download_url(url, format_type):
     # Membaca cookies dari file
-    with open('cookies.txt', 'r') as f:
-        cookies = json.load(f)
+    try:
+        with open('cookies.txt', 'r') as f:
+            cookies = json.load(f)
+    except json.JSONDecodeError:
+        return None, "Error: Invalid JSON in cookies.txt"
+    except FileNotFoundError:
+        return None, "Error: cookies.txt not found"
 
     # Menyimpan cookies ke dalam format yang diperlukan oleh yt-dlp
     cookie_dict = {}
@@ -19,17 +24,19 @@ def get_youtube_download_url(url, format_type):
     ydl_opts = {
         'format': 'bestaudio' if format_type == 'audio' else 'bestvideo+bestaudio',
         'noplaylist': True,
-        'cookiefile': 'cookies.txt',  # Jika kamu ingin menggunakan file cookies
         'cookies': cookie_dict  # Menambahkan cookies di sini
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        # Ambil link download terbaik berdasarkan format yang dipilih
-        if format_type == 'audio':
-            return info_dict['url']  # Link audio
-        else:
-            return info_dict['url']  # Link video
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            # Ambil link download terbaik berdasarkan format yang dipilih
+            if format_type == 'audio':
+                return info_dict['url'], None  # Link audio
+            else:
+                return info_dict['url'], None  # Link video
+    except Exception as e:
+        return None, str(e)  # Tangani kesalahan yt-dlp
 
 @app.route('/')
 def index():
@@ -44,11 +51,12 @@ def download_video():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
 
-    try:
-        download_url = get_youtube_download_url(url, download_type)
-        return jsonify({'download_url': download_url})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    download_url, error = get_youtube_download_url(url, download_type)
+
+    if error:
+        return jsonify({'error': error}), 500
+
+    return jsonify({'download_url': download_url})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
