@@ -1,42 +1,41 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 import yt_dlp
-import os
 
 app = Flask(__name__)
 
+# Fungsi untuk mendapatkan link download dengan cookies
 def get_youtube_download_url(url, format_type):
     ydl_opts = {
         'format': 'bestaudio' if format_type == 'audio' else 'bestvideo+bestaudio',
-        'noplaylist': True
+        'noplaylist': True,
+        'cookiefile': 'cookies.txt',  # Path ke file cookies
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        # Ambil link download terbaik berdasarkan format yang dipilih
-        if format_type == 'audio':
-            return info_dict['url']  # Link audio
-        else:
-            return info_dict['url']  # Link video
+        try:
+            info_dict = ydl.extract_info(url, download=False)
+            return info_dict['url']
+        except Exception as e:
+            return str(e)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
+# Endpoint untuk mendapatkan link audio atau video
 @app.route('/download', methods=['POST'])
-def download_video():
+def download():
     data = request.json
-    url = data.get('url')
-    download_type = data.get('type', 'video')  # 'video' atau 'audio'
+    video_url = data.get('url')
+    format_type = data.get('format', 'audio')  # Default ke audio jika format tidak ditentukan
 
-    if not url:
-        return jsonify({'error': 'URL is required'}), 400
+    if not video_url:
+        return jsonify({'error': 'Video URL is required'}), 400
 
-    try:
-        download_url = get_youtube_download_url(url, download_type)
-        return jsonify({'download_url': download_url})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # Mendapatkan link download
+    download_url = get_youtube_download_url(video_url, format_type)
 
+    if 'error' in download_url:
+        return jsonify({'error': download_url}), 500
+
+    return jsonify({'download_url': download_url})
+
+# Menjalankan aplikasi
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
