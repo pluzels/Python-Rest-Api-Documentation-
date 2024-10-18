@@ -9,16 +9,25 @@ def get_youtube_download_url(url, format_type):
         'format': 'bestaudio' if format_type == 'audio' else 'bestvideo+bestaudio',
         'noplaylist': True,
         'cookies': 'cookies.txt',  # Menggunakan file cookies
-        'quiet': True  # Menonaktifkan output log
+        'quiet': True,  # Menonaktifkan output log
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info_dict = ydl.extract_info(url, download=False)
+            formats = info_dict.get('formats', [])
             if format_type == 'audio':
-                return info_dict['formats'][0]['url']  # Ambil URL audio
+                # Mencari URL audio yang valid
+                for fmt in formats:
+                    if fmt.get('acodec') != 'none':  # Pastikan codec audio ada
+                        return fmt['url']
             else:
-                return info_dict['formats'][0]['url']  # Ambil URL video
+                # Mencari URL video yang valid
+                for fmt in formats:
+                    if fmt.get('vcodec') != 'none':  # Pastikan codec video ada
+                        return fmt['url']
+            
+            raise ValueError("No valid download URL found")
         except KeyError as e:
             raise ValueError(f"Failed to extract URL: {str(e)}")
         except Exception as e:
