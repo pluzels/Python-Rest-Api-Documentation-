@@ -1,101 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Video/Audio Downloader</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        input, button, select {
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 1rem;
-        }
-        button {
-            cursor: pointer;
-        }
-        .hidden {
-            display: none;
-        }
-        #qualityOptions {
-            margin-top: 20px;
-        }
-    </style>
+    <title>YouTube Downloader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-    <h1>Download YouTube Video or Audio</h1>
-
-    <label for="url">YouTube URL:</label>
-    <input type="text" id="url" placeholder="https://youtu.be/tGv7CUutzqU" size="50">
-    <br>
-
-    <label for="downloadType">Download Type:</label>
-    <select id="downloadType">
-        <option value="video">Video</option>
-        <option value="audio">Audio</option>
-    </select>
-    <br>
-
-    <button onclick="fetchFormats()">Fetch Formats</button>
-    <div id="qualityOptions" class="hidden">
-        <h3>Select Quality:</h3>
-        <select id="qualitySelect">
-        </select>
-        <br>
-        <button onclick="downloadFile()">Download</button>
+    <div class="container">
+        <h1>YouTube Downloader</h1>
+        <form id="download-form">
+            <label for="url">YouTube URL:</label>
+            <input type="text" id="url" placeholder="https://youtu.be/tGv7CUutzqU" required>
+            
+            <label>Download Type:</label>
+            <div class="button-group">
+                <button type="button" class="download-type" id="audio-button">Audio</button>
+                <button type="button" class="download-type" id="video-button">Video</button>
+            </div>
+            <div id="quality-options"></div>
+            <button type="submit" id="download-button" style="display:none;">Download</button>
+        </form>
+        <div id="response-message"></div>
     </div>
 
     <script>
-        async function fetchFormats() {
+        const audioButton = document.getElementById('audio-button');
+        const videoButton = document.getElementById('video-button');
+        const qualityOptions = document.getElementById('quality-options');
+        const downloadButton = document.getElementById('download-button');
+        const responseMessage = document.getElementById('response-message');
+        
+        audioButton.onclick = () => handleDownloadType('audio');
+        videoButton.onclick = () => handleDownloadType('video');
+
+        document.getElementById('download-form').onsubmit = async (e) => {
+            e.preventDefault();
             const url = document.getElementById('url').value;
-            const downloadType = document.getElementById('downloadType').value;
-
-            if (!url) {
-                alert('Please enter a valid YouTube URL.');
-                return;
-            }
-
-            const response = await fetch('/video_formats', {
+            const quality = document.querySelector('input[name="quality"]:checked').value;
+            
+            const response = await fetch('/download', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url, type: downloadType })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, quality })
             });
 
             const data = await response.json();
-            const qualitySelect = document.getElementById('qualitySelect');
-            const qualityOptionsDiv = document.getElementById('qualityOptions');
-            
-            qualitySelect.innerHTML = '';  // Clear previous options
-
-            if (data[downloadType]) {
-                data[downloadType].forEach(format => {
-                    const option = document.createElement('option');
-                    option.value = format.url;
-                    option.text = format.quality;
-                    qualitySelect.appendChild(option);
-                });
-                qualityOptionsDiv.classList.remove('hidden');
+            if (data.download_url) {
+                responseMessage.innerHTML = `<a href="${data.download_url}" target="_blank">Download Link</a>`;
             } else {
-                alert('No formats available for the selected type.');
-                qualityOptionsDiv.classList.add('hidden');
+                responseMessage.innerHTML = `<span>Error: ${data.error}</span>`;
             }
-        }
+        };
 
-        async function downloadFile() {
-            const url = document.getElementById('qualitySelect').value;
-            if (!url) {
-                alert('Please select a quality to download.');
-                return;
+        async function handleDownloadType(type) {
+            const url = document.getElementById('url').value;
+            const response = await fetch('/video_formats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, type })
+            });
+
+            const data = await response.json();
+            qualityOptions.innerHTML = ''; // Reset options
+            if (type === 'audio') {
+                data.audio.forEach(option => {
+                    qualityOptions.innerHTML += `<label><input type="radio" name="quality" value="${option.quality}" required>${option.quality}</label>`;
+                });
+            } else {
+                data.video.forEach(option => {
+                    qualityOptions.innerHTML += `<label><input type="radio" name="quality" value="${option.quality}" required>${option.quality}</label>`;
+                });
             }
-
-            window.location.href = url;  // Redirect to the download URL
+            downloadButton.style.display = 'inline'; // Show download button
         }
     </script>
-
 </body>
 </html>
