@@ -4,19 +4,16 @@ import os
 
 app = Flask(__name__)
 
+# Fungsi untuk mendapatkan URL download berdasarkan tipe
 def get_youtube_download_url(url, format_type):
     try:
-        # Inisialisasi objek YouTube
         yt = YouTube(url)
 
-        # Jika audio, ambil stream hanya untuk audio
         if format_type == 'audio':
             stream = yt.streams.filter(only_audio=True).first()
         else:
-            # Jika video, ambil stream yang progressive (video+audio)
             stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
 
-        # Jika stream ditemukan, kembalikan URL-nya
         if stream:
             return stream.url
         else:
@@ -32,7 +29,7 @@ def index():
 def download_video():
     data = request.get_json()
     url = data.get('url')
-    download_type = data.get('type', 'video')  # Default: 'video'
+    download_type = data.get('type', 'video')  # Default ke 'video'
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
