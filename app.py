@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Fungsi untuk mendapatkan daftar format audio dan video untuk YouTube
+# Fungsi untuk mendapatkan daftar format audio dan video dari YouTube
 def get_video_formats(url):
     cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
     ydl_opts = {
@@ -55,26 +55,32 @@ def get_youtube_download_url(url, quality):
                 return fmt['url']
     return None
 
-# Fungsi untuk mendownload video dari TikTok
-def get_tiktok_download_url(url):
+# Fungsi untuk mendownload video atau audio dari TikTok
+def download_tiktok_video(url):
     ydl_opts = {
+        'format': 'best',
         'noplaylist': True,
         'quiet': True,
-        'format': 'best',  # Mengambil format terbaik
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',  # Format yang diinginkan
-        }],
+        'headers': {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'
+        }
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-        download_url = info_dict['url']
-        return download_url
+        return info_dict.get('url', None)
 
 @app.route('/')
-def index():
+def home():
     return render_template('home.html')
+
+@app.route('/youtube', methods=['GET'])
+def index():
+    return render_template('index.html')
+
+@app.route('/tiktok', methods=['GET'])
+def tiktok():
+    return render_template('tiktok.html')
 
 @app.route('/video_formats', methods=['POST'])
 def video_formats():
@@ -96,8 +102,8 @@ def video_formats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/download', methods=['POST'])
-def download_video():
+@app.route('/download_youtube', methods=['POST'])
+def download_youtube():
     data = request.json
     url = data.get('url')
     quality = data.get('quality')
@@ -113,8 +119,8 @@ def download_video():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/tiktok_download', methods=['POST'])
-def tiktok_download():
+@app.route('/download_tiktok', methods=['POST'])
+def download_tiktok():
     data = request.json
     url = data.get('url')
 
@@ -122,9 +128,9 @@ def tiktok_download():
         return jsonify({'error': 'URL is required'}), 400
 
     try:
-        download_url = get_tiktok_download_url(url)
+        download_url = download_tiktok_video(url)
         if not download_url:
-            return jsonify({'error': 'Could not retrieve download URL'}), 404
+            return jsonify({'error': 'Could not retrieve TikTok download URL'}), 404
         return jsonify({'download_url': download_url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
