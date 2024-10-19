@@ -39,6 +39,10 @@
                     button.onclick = () => download(format.url);
                     qualityOptions.appendChild(button);
                 });
+                const downloadButton = document.createElement('button');
+                downloadButton.innerText = 'Download';
+                downloadButton.onclick = () => download(options[0].url); // Mengunduh format pertama yang tersedia
+                qualityOptions.appendChild(downloadButton);
             } else {
                 qualityOptions.innerHTML = '<p>No formats available</p>';
             }
