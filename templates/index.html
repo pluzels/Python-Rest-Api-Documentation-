@@ -4,100 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download YouTube Video or Audio</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        #format_selection {
-            display: none;
-            margin-top: 20px;
-        }
-    </style>
 </head>
 <body>
     <h1>Download YouTube Video or Audio</h1>
-    <div>
-        <label for="url">YouTube URL:</label>
-        <input type="text" id="url" placeholder="Masukkan URL video YouTube">
-    </div>
-    <div>
-        <label>Download Type:</label>
-        <button id="download_audio">Audio</button>
-        <button id="download_video">Video</button>
-    </div>
-    
-    <div id="format_selection">
-        <h2>Pilih Kualitas:</h2>
-        <select id="quality"></select>
-        <button id="download">Download</button>
-    </div>
-
-    <div id="download_link" style="display:none;"></div>
+    <label for="url">YouTube URL:</label>
+    <input type="text" id="url" placeholder="https://youtu.be/tGv7CUutzqU" required>
+    <br>
+    <label>Download Type:</label>
+    <button onclick="getFormats('audio')">Audio</button>
+    <button onclick="getFormats('video')">Video</button>
+    <br>
+    <div id="qualityOptions"></div>
 
     <script>
-        $(document).ready(function () {
-            let selectedType;
-
-            $('#download_audio').click(function () {
-                selectedType = 'audio';
-                getFormats();
+        async function getFormats(type) {
+            const url = document.getElementById('url').value;
+            const response = await fetch('/video_formats', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, type })
             });
 
-            $('#download_video').click(function () {
-                selectedType = 'video';
-                getFormats();
-            });
+            const data = await response.json();
+            const qualityOptions = document.getElementById('qualityOptions');
+            qualityOptions.innerHTML = ''; // Kosongkan sebelumnya
 
-            function getFormats() {
-                var url = $('#url').val();
-                if (!url) {
-                    alert('URL harus diisi!');
-                    return;
-                }
-
-                $.ajax({
-                    url: '/video_formats',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ url: url }),
-                    success: function (data) {
-                        $('#quality').empty();
-                        if (data.formats && data.formats.length > 0) {
-                            data.formats.forEach(function (format) {
-                                $('#quality').append(`<option value="${format.quality}">${format.quality}</option>`);
-                            });
-                            $('#format_selection').show();
-                        } else {
-                            alert('No formats available.');
-                        }
-                    },
-                    error: function (error) {
-                        alert('Error: ' + error.responseJSON.error);
-                    }
+            if (data.audio || data.video) {
+                const options = data.audio || data.video;
+                options.forEach(format => {
+                    const button = document.createElement('button');
+                    button.innerText = format.quality;
+                    button.onclick = () => download(format.url);
+                    qualityOptions.appendChild(button);
                 });
+            } else {
+                qualityOptions.innerHTML = '<p>No formats available</p>';
             }
+        }
 
-            $('#download').click(function () {
-                var url = $('#url').val();
-                var quality = $('#quality option:selected').val();
-
-                $.ajax({
-                    url: '/download',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ url: url, quality: quality }),
-                    success: function (data) {
-                        $('#download_link').html(`<a href="${data.download_url}" target="_blank">Download File</a>`);
-                        $('#download_link').show();
-                    },
-                    error: function (error) {
-                        alert('Error: ' + error.responseJSON.error);
-                    }
-                });
+        async function download(url) {
+            const response = await fetch('/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, quality: url }) // quality sama dengan url untuk download
             });
-        });
+
+            const data = await response.json();
+            if (data.download_url) {
+                window.location.href = data.download_url; // Mengarahkan pengguna untuk mendownload
+            } else {
+                alert(data.error || 'Download failed');
+            }
+        }
     </script>
 </body>
 </html>
