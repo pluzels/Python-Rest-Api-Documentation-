@@ -9,8 +9,8 @@ def get_video_formats(url):
     cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
     ydl_opts = {
         'noplaylist': True,
-        'cookiefile': cookies_file,  # Tambahkan opsi cookies
-        'quiet': True,  # Untuk menghindari output yang berlebihan
+        'cookiefile': cookies_file,
+        'quiet': True,
         'headers': {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'
         }
@@ -22,20 +22,19 @@ def get_video_formats(url):
         video_options = []
         for fmt in formats:
             if fmt.get('acodec') != 'none':  # Format audio tersedia
-                video_options.append(f"{fmt['height']}p (audio)")  # Misalnya: 1080p (audio)
+                video_options.append({'quality': f"{fmt['height']}p (audio)", 'url': fmt['url']})
             elif fmt.get('vcodec') != 'none':  # Format video tanpa audio
-                video_options.append(f"{fmt['height']}p (no audio)")  # Misalnya: 720p (no audio)
+                video_options.append({'quality': f"{fmt['height']}p (no audio)", 'url': fmt['url']})
 
     return video_options
 
 # Fungsi untuk mendapatkan URL download berdasarkan format yang dipilih
-def get_youtube_download_url(url, format_type):
-    cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
+def get_youtube_download_url(url, quality):
+    cookies_file = 'cookies.txt'
     ydl_opts = {
-        'format': 'bestaudio' if format_type == 'audio' else 'bestvideo+bestaudio',
         'noplaylist': True,
-        'cookiefile': cookies_file,  # Tambahkan opsi cookies
-        'quiet': True,  # Untuk menghindari output yang berlebihan
+        'cookiefile': cookies_file,
+        'quiet': True,
         'headers': {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'
         }
@@ -43,20 +42,10 @@ def get_youtube_download_url(url, format_type):
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-
-        if format_type == 'audio':
-            audio_url = None
-            for format in info_dict['formats']:
-                if 'acodec' in format and format['acodec'] != 'none':
-                    audio_url = format['url']
-                    break
-            if audio_url is None:
-                return None
-            return audio_url
-        else:
-            for format in info_dict['formats']:
-                if 'vcodec' in format and format['vcodec'] != 'none':
-                    return format['url']
+        for fmt in info_dict['formats']:
+            if fmt['format_note'] == quality:
+                return fmt['url']
+    return None
 
 @app.route('/')
 def index():
@@ -80,13 +69,13 @@ def video_formats():
 def download_video():
     data = request.json
     url = data.get('url')
-    download_type = data.get('type', 'video')  # 'video' atau 'audio'
+    quality = data.get('quality')
 
-    if not url:
-        return jsonify({'error': 'URL is required'}), 400
+    if not url or not quality:
+        return jsonify({'error': 'URL and quality are required'}), 400
 
     try:
-        download_url = get_youtube_download_url(url, download_type)
+        download_url = get_youtube_download_url(url, quality)
         if not download_url:
             return jsonify({'error': 'Could not retrieve download URL'}), 404
         return jsonify({'download_url': download_url})
