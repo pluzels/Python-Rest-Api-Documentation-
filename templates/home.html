@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Downloader</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <title>Video Downloader Home By galihrhgnwnn</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Selamat Datang di Downloader</h1>
-        <div class="button-container">
-            <a href="{{ url_for('index') }}" class="button">YouTube Downloader</a>
-            <div class="button coming-soon">TikTok Downloader</div>
-        </div>
+    <h1>Welcome to the Video Downloader</h1>
+    <div class="button-container">
+        <a href="{{ url_for('index') }}" class="button">YouTube Downloader</a>
+        <a href="{{ url_for('tiktok') }}" class="button">TikTok Downloader</a>
     </div>
 </body>
 </html>
