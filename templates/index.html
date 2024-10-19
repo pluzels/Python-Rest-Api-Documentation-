@@ -3,65 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Downloader</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        input, select, button {
-            padding: 10px;
-            margin: 5px 0;
-            width: 100%;
-            max-width: 400px;
-        }
-        #result {
-            margin-top: 20px;
-        }
-        a {
-            text-decoration: none;
-            color: blue;
-        }
-    </style>
+    <title>Download YouTube Video or Audio</title>
 </head>
 <body>
-    <h1>YouTube Downloader</h1>
-    <form id="download-form">
-        <input type="text" id="url" placeholder="Enter YouTube video URL" required>
-        <select id="type">
+    <h1>Download YouTube Video or Audio</h1>
+    <form id="downloadForm">
+        <label for="url">YouTube URL:</label>
+        <input type="text" id="url" name="url" placeholder="Enter YouTube URL" required>
+
+        <label for="type">Download Type:</label>
+        <select id="type" name="type">
             <option value="video">Video</option>
             <option value="audio">Audio</option>
         </select>
-        <button type="submit">Get Download Link</button>
+
+        <button type="button" onclick="download()">Download</button>
     </form>
-    <div id="result"></div>
+
+    <p id="result"></p>
 
     <script>
-        document.getElementById('download-form').onsubmit = async function (e) {
-            e.preventDefault();
+        function download() {
             const url = document.getElementById('url').value;
             const type = document.getElementById('type').value;
 
-            const response = await fetch('/download', {
+            fetch('/download', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ url, type }),
+                body: JSON.stringify({ url: url, type: type })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.download_url) {
+                    document.getElementById('result').innerHTML = 
+                        `<a href="${data.download_url}" target="_blank">Click here to download</a>`;
+                } else {
+                    document.getElementById('result').innerText = 'Error: ' + data.error;
+                }
+            })
+            .catch(error => {
+                document.getElementById('result').innerText = 'Error: ' + error;
             });
-
-            const data = await response.json();
-            const resultDiv = document.getElementById('result');
-
-            if (data.download_url) {
-                resultDiv.innerHTML = `<a href="${data.download_url}" target="_blank">Download ${type}</a>`;
-            } else {
-                resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-            }
-        };
+        }
     </script>
 </body>
 </html>
