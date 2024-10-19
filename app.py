@@ -55,7 +55,7 @@ def get_youtube_download_url(url, quality):
                 return fmt['url']
     return None
 
-# Fungsi untuk mendownload video atau audio dari TikTok
+# Fungsi untuk mendownload video dari TikTok
 def download_tiktok_video(url):
     ydl_opts = {
         'format': 'best',
@@ -130,7 +130,7 @@ def download_tiktok():
     try:
         download_url = download_tiktok_video(url)
         if not download_url:
-            return jsonify({'error': 'Could not retrieve TikTok download URL'}), 404
+            return jsonify({'error': 'Could not retrieve download URL'}), 404
         return jsonify({'download_url': download_url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
