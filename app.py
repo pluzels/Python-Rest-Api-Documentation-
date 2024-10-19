@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # Fungsi untuk mendapatkan daftar format audio dan video
 def get_video_formats(url):
-    cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
+    cookies_file = 'cookies.txt'
     ydl_opts = {
         'noplaylist': True,
         'cookiefile': cookies_file,
@@ -24,17 +24,15 @@ def get_video_formats(url):
         video_options = []
         
         for fmt in formats:
-            # Tambahkan format audio
-            if fmt.get('acodec') and fmt['acodec'] != 'none':
-                quality = fmt.get('abr', 'audio')  # Menggunakan bitrate audio
+            if fmt.get('acodec') != 'none':
+                quality = fmt.get('abr', 'audio')
                 audio_options.append({'quality': f"{quality} kbps", 'url': fmt['url']})
-            elif fmt.get('vcodec') and fmt['vcodec'] != 'none':  # Format video
+            elif fmt.get('vcodec') != 'none':
                 quality = fmt.get('height', 'no audio')
                 video_options.append({'quality': f"{quality}p (no audio)", 'url': fmt['url']})
 
     return {'audio': audio_options, 'video': video_options}
 
-# Fungsi untuk mendapatkan URL download berdasarkan format yang dipilih
 def get_youtube_download_url(url, quality):
     cookies_file = 'cookies.txt'
     ydl_opts = {
@@ -56,6 +54,10 @@ def get_youtube_download_url(url, quality):
     return None
 
 @app.route('/')
+def home():
+    return render_template('home.html')
+
+@app.route('/youtube_downloader')
 def index():
     return render_template('index.html')
 
@@ -63,7 +65,7 @@ def index():
 def video_formats():
     data = request.json
     url = data.get('url')
-    download_type = data.get('type')  # Mengambil tipe download (audio/video)
+    download_type = data.get('type')
 
     if not url or not download_type:
         return jsonify({'error': 'URL and download type are required'}), 400
@@ -71,9 +73,9 @@ def video_formats():
     try:
         formats = get_video_formats(url)
         if download_type == 'audio':
-            return jsonify({'audio': formats['audio']}), 200  # Mengembalikan hanya format audio
+            return jsonify({'audio': formats['audio']})
         elif download_type == 'video':
-            return jsonify({'video': formats['video']}), 200  # Mengembalikan hanya format video
+            return jsonify({'video': formats['video']})
         else:
             return jsonify({'error': 'Invalid download type'}), 400
     except Exception as e:
@@ -92,7 +94,7 @@ def download_video():
         download_url = get_youtube_download_url(url, quality)
         if not download_url:
             return jsonify({'error': 'Could not retrieve download URL'}), 404
-        return jsonify({'download_url': download_url}), 200
+        return jsonify({'download_url': download_url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
