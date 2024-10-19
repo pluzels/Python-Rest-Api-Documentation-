@@ -1,79 +1,90 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Downloader</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <title>YouTube Downloader</title>
 </head>
 <body>
-    <div class="container">
-        <h1>YouTube Downloader</h1>
-        <form id="download-form">
-            <label for="url">YouTube URL:</label>
-            <input type="text" id="url" placeholder="https://youtu.be/tGv7CUutzqU" required>
-            
-            <label>Download Type:</label>
-            <div class="button-group">
-                <button type="button" class="download-type" id="audio-button">Audio</button>
-                <button type="button" class="download-type" id="video-button">Video</button>
-            </div>
-            <div id="quality-options"></div>
-            <button type="submit" id="download-button" style="display:none;">Download</button>
-        </form>
-        <div id="response-message"></div>
+    <h1>YouTube Downloader</h1>
+    <form id="downloadForm">
+        <label for="url">YouTube URL:</label>
+        <input type="text" id="url" name="url" required>
+        
+        <label for="downloadType">Download Type:</label>
+        <select id="downloadType" name="downloadType">
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+        </select>
+
+        <button type="submit">Get Formats</button>
+    </form>
+
+    <div id="formats" style="display: none;">
+        <h2>Select Format</h2>
+        <select id="formatSelect"></select>
+        <button id="downloadButton" style="display: none;">Download</button>
     </div>
 
     <script>
-        const audioButton = document.getElementById('audio-button');
-        const videoButton = document.getElementById('video-button');
-        const qualityOptions = document.getElementById('quality-options');
-        const downloadButton = document.getElementById('download-button');
-        const responseMessage = document.getElementById('response-message');
-        
-        audioButton.onclick = () => handleDownloadType('audio');
-        videoButton.onclick = () => handleDownloadType('video');
+        document.getElementById('downloadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
 
-        document.getElementById('download-form').onsubmit = async (e) => {
-            e.preventDefault();
             const url = document.getElementById('url').value;
-            const quality = document.querySelector('input[name="quality"]:checked').value;
-            
-            const response = await fetch('/download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, quality })
-            });
-
-            const data = await response.json();
-            if (data.download_url) {
-                responseMessage.innerHTML = `<a href="${data.download_url}" target="_blank">Download Link</a>`;
-            } else {
-                responseMessage.innerHTML = `<span>Error: ${data.error}</span>`;
-            }
-        };
-
-        async function handleDownloadType(type) {
-            const url = document.getElementById('url').value;
+            const downloadType = document.getElementById('downloadType').value;
             const response = await fetch('/video_formats', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, type })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url, type: downloadType })
             });
 
             const data = await response.json();
-            qualityOptions.innerHTML = ''; // Reset options
-            if (type === 'audio') {
-                data.audio.forEach(option => {
-                    qualityOptions.innerHTML += `<label><input type="radio" name="quality" value="${option.quality}" required>${option.quality}</label>`;
+
+            const formatSelect = document.getElementById('formatSelect');
+            formatSelect.innerHTML = ''; // Clear previous options
+
+            if (downloadType === 'audio' && data.audio) {
+                data.audio.forEach(format => {
+                    const option = document.createElement('option');
+                    option.value = format.url;
+                    option.textContent = format.quality;
+                    formatSelect.appendChild(option);
                 });
-            } else {
-                data.video.forEach(option => {
-                    qualityOptions.innerHTML += `<label><input type="radio" name="quality" value="${option.quality}" required>${option.quality}</label>`;
+            } else if (downloadType === 'video' && data.video) {
+                data.video.forEach(format => {
+                    const option = document.createElement('option');
+                    option.value = format.url;
+                    option.textContent = format.quality;
+                    formatSelect.appendChild(option);
                 });
             }
-            downloadButton.style.display = 'inline'; // Show download button
-        }
+
+            document.getElementById('formats').style.display = 'block';
+            document.getElementById('downloadButton').style.display = 'block';
+        });
+
+        document.getElementById('downloadButton').addEventListener('click', async function() {
+            const url = document.getElementById('url').value;
+            const selectedFormat = document.getElementById('formatSelect').value;
+            const response = await fetch('/download_youtube', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url, quality: selectedFormat })
+            });
+
+            const data = await response.json();
+
+            if (data.download_url) {
+                window.location.href = data.download_url; // Redirect to download
+            } else {
+                alert(data.error);
+            }
+        });
     </script>
 </body>
 </html>
