@@ -22,9 +22,11 @@ def get_video_formats(url):
         video_options = []
         for fmt in formats:
             if fmt.get('acodec') != 'none':  # Format audio tersedia
-                video_options.append({'quality': f"{fmt['height']}p (audio)", 'url': fmt['url']})
+                quality = fmt.get('height', 'audio')  # Jika tidak ada height, gunakan 'audio'
+                video_options.append({'quality': f"{quality}p (audio)", 'url': fmt['url']})
             elif fmt.get('vcodec') != 'none':  # Format video tanpa audio
-                video_options.append({'quality': f"{fmt['height']}p (no audio)", 'url': fmt['url']})
+                quality = fmt.get('height', 'no audio')  # Jika tidak ada height, gunakan 'no audio'
+                video_options.append({'quality': f"{quality}p (no audio)", 'url': fmt['url']})
 
     return video_options
 
@@ -43,7 +45,9 @@ def get_youtube_download_url(url, quality):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
         for fmt in info_dict['formats']:
-            if fmt['format_note'] == quality:
+            if 'height' in fmt and f"{fmt['height']}p (audio)" == quality:
+                return fmt['url']
+            elif 'height' in fmt and f"{fmt['height']}p (no audio)" == quality:
                 return fmt['url']
     return None
 
