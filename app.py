@@ -12,7 +12,7 @@ def get_youtube_download_url(url, format_type):
         'cookiefile': cookies_file,  # Tambahkan opsi cookies
         'quiet': True,  # Untuk menghindari output yang berlebihan
         'headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'
         }
     }
 
