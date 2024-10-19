@@ -7,38 +7,38 @@
     <title>TikTok Downloader</title>
 </head>
 <body>
-    <div class="container">
-        <h1>TikTok Video Downloader</h1>
-        <form id="tiktokDownloadForm">
-            <label for="url">TikTok Video URL:</label>
-            <input type="text" id="url" name="url" placeholder="Masukkan URL TikTok" required>
-            <button type="submit">Download Video</button>
-        </form>
+    <h1>TikTok Downloader</h1>
+    <form id="tiktokForm">
+        <label for="tiktokUrl">TikTok URL:</label>
+        <input type="text" id="tiktokUrl" name="tiktokUrl" required>
+        <button type="submit">Download Video</button>
+    </form>
 
-        <div id="message"></div>
-
-        <a href="/" class="back-button">Kembali ke Home</a>
+    <div id="tiktokDownloadLink" style="display: none;">
+        <a id="downloadLink" href="" target="_blank">Click here to download</a>
     </div>
 
     <script>
-        document.getElementById('tiktokDownloadForm').addEventListener('submit', function(event) {
+        document.getElementById('tiktokForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            const url = document.getElementById('url').value;
 
-            fetch('/download_tiktok', {
+            const url = document.getElementById('tiktokUrl').value;
+            const response = await fetch('/download_tiktok', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ url: url }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('message').innerText = data.message || data.error;
-            })
-            .catch(error => {
-                document.getElementById('message').innerText = 'Error: ' + error;
+                body: JSON.stringify({ url: url })
             });
+
+            const data = await response.json();
+
+            if (data.download_url) {
+                document.getElementById('downloadLink').href = data.download_url;
+                document.getElementById('tiktokDownloadLink').style.display = 'block';
+            } else {
+                alert(data.error);
+            }
         });
     </script>
 </body>
