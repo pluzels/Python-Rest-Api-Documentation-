@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Fungsi untuk mendapatkan daftar format audio dan video
+# Fungsi untuk mendapatkan daftar format audio dan video untuk YouTube
 def get_video_formats(url):
     cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
     ydl_opts = {
@@ -55,6 +55,23 @@ def get_youtube_download_url(url, quality):
                 return fmt['url']
     return None
 
+# Fungsi untuk mendownload video dari TikTok
+def get_tiktok_download_url(url):
+    ydl_opts = {
+        'noplaylist': True,
+        'quiet': True,
+        'format': 'best',  # Mengambil format terbaik
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',  # Format yang diinginkan
+        }],
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(url, download=False)
+        download_url = info_dict['url']
+        return download_url
+
 @app.route('/')
 def index():
     return render_template('home.html')
@@ -90,6 +107,22 @@ def download_video():
 
     try:
         download_url = get_youtube_download_url(url, quality)
+        if not download_url:
+            return jsonify({'error': 'Could not retrieve download URL'}), 404
+        return jsonify({'download_url': download_url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/tiktok_download', methods=['POST'])
+def tiktok_download():
+    data = request.json
+    url = data.get('url')
+
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    try:
+        download_url = get_tiktok_download_url(url)
         if not download_url:
             return jsonify({'error': 'Could not retrieve download URL'}), 404
         return jsonify({'download_url': download_url})
