@@ -3,50 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download YouTube Video or Audio</title>
+    <title>YouTube Downloader</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>Download YouTube Video or Audio</h1>
-    <form id="downloadForm">
-        <label for="url">YouTube URL:</label>
-        <input type="text" id="url" name="url" placeholder="Enter YouTube URL" required>
-
-        <label for="type">Download Type:</label>
-        <select id="type" name="type">
-            <option value="video">Video</option>
-            <option value="audio">Audio</option>
-        </select>
-
-        <button type="button" onclick="download()">Download</button>
-    </form>
-
-    <p id="result"></p>
+    <h1>YouTube Downloader</h1>
+    <input type="text" id="url" placeholder="Enter YouTube URL">
+    <button id="getFormats">Get Formats</button>
+    <div id="formatOptions"></div>
+    <button id="downloadAudio">Download Audio</button>
+    <button id="downloadVideo">Download Video</button>
 
     <script>
-        function download() {
-            const url = document.getElementById('url').value;
-            const type = document.getElementById('type').value;
-
-            fetch('/download', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: url, type: type })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.download_url) {
-                    document.getElementById('result').innerHTML = 
-                        `<a href="${data.download_url}" target="_blank">Click here to download</a>`;
-                } else {
-                    document.getElementById('result').innerText = 'Error: ' + data.error;
-                }
-            })
-            .catch(error => {
-                document.getElementById('result').innerText = 'Error: ' + error;
+        $(document).ready(function () {
+            $('#getFormats').click(function () {
+                const url = $('#url').val();
+                $.post('/video_formats', { url: url }, function (data) {
+                    if (data.formats) {
+                        let optionsHtml = '<select id="qualitySelect">';
+                        data.formats.forEach(format => {
+                            optionsHtml += `<option value="${format}">${format}</option>`;
+                        });
+                        optionsHtml += '</select>';
+                        $('#formatOptions').html(optionsHtml);
+                    } else {
+                        alert(data.error);
+                    }
+                });
             });
-        }
+
+            $('#downloadAudio').click(function () {
+                const url = $('#url').val();
+                const quality = $('#qualitySelect').val();
+                $.post('/download', { url: url, quality: quality }, function (data) {
+                    if (data.download_url) {
+                        window.location.href = data.download_url;  // Arahkan ke link download
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            });
+
+            $('#downloadVideo').click(function () {
+                const url = $('#url').val();
+                const quality = $('#qualitySelect').val();
+                $.post('/download', { url: url, quality: quality }, function (data) {
+                    if (data.download_url) {
+                        window.location.href = data.download_url;  // Arahkan ke link download
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
