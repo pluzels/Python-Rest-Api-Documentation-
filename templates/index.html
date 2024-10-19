@@ -3,55 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Downloader</title>
+    <title>Download YouTube Video or Audio</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #format_selection {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>YouTube Downloader</h1>
-    <input type="text" id="url" placeholder="Enter YouTube URL">
-    <button id="getFormats">Get Formats</button>
-    <div id="formatOptions"></div>
-    <button id="downloadAudio">Download Audio</button>
-    <button id="downloadVideo">Download Video</button>
+    <h1>Download YouTube Video or Audio</h1>
+    <div>
+        <label for="url">YouTube URL:</label>
+        <input type="text" id="url" placeholder="Masukkan URL video YouTube">
+    </div>
+    <div>
+        <label>Download Type:</label>
+        <button id="download_audio">Audio</button>
+        <button id="download_video">Video</button>
+    </div>
+    
+    <div id="format_selection">
+        <h2>Pilih Kualitas:</h2>
+        <select id="quality"></select>
+        <button id="download">Download</button>
+    </div>
+
+    <div id="download_link" style="display:none;"></div>
 
     <script>
         $(document).ready(function () {
-            $('#getFormats').click(function () {
-                const url = $('#url').val();
-                $.post('/video_formats', { url: url }, function (data) {
-                    if (data.formats) {
-                        let optionsHtml = '<select id="qualitySelect">';
-                        data.formats.forEach(format => {
-                            optionsHtml += `<option value="${format}">${format}</option>`;
-                        });
-                        optionsHtml += '</select>';
-                        $('#formatOptions').html(optionsHtml);
-                    } else {
-                        alert(data.error);
-                    }
-                });
+            let selectedType;
+
+            $('#download_audio').click(function () {
+                selectedType = 'audio';
+                getFormats();
             });
 
-            $('#downloadAudio').click(function () {
-                const url = $('#url').val();
-                const quality = $('#qualitySelect').val();
-                $.post('/download', { url: url, quality: quality }, function (data) {
-                    if (data.download_url) {
-                        window.location.href = data.download_url;  // Arahkan ke link download
-                    } else {
-                        alert(data.error);
-                    }
-                });
+            $('#download_video').click(function () {
+                selectedType = 'video';
+                getFormats();
             });
 
-            $('#downloadVideo').click(function () {
-                const url = $('#url').val();
-                const quality = $('#qualitySelect').val();
-                $.post('/download', { url: url, quality: quality }, function (data) {
-                    if (data.download_url) {
-                        window.location.href = data.download_url;  // Arahkan ke link download
-                    } else {
-                        alert(data.error);
+            function getFormats() {
+                var url = $('#url').val();
+                if (!url) {
+                    alert('URL harus diisi!');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/video_formats',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ url: url }),
+                    success: function (data) {
+                        $('#quality').empty();
+                        if (data.formats && data.formats.length > 0) {
+                            data.formats.forEach(function (format) {
+                                $('#quality').append(`<option value="${format.quality}">${format.quality}</option>`);
+                            });
+                            $('#format_selection').show();
+                        } else {
+                            alert('No formats available.');
+                        }
+                    },
+                    error: function (error) {
+                        alert('Error: ' + error.responseJSON.error);
+                    }
+                });
+            }
+
+            $('#download').click(function () {
+                var url = $('#url').val();
+                var quality = $('#quality option:selected').val();
+
+                $.ajax({
+                    url: '/download',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ url: url, quality: quality }),
+                    success: function (data) {
+                        $('#download_link').html(`<a href="${data.download_url}" target="_blank">Download File</a>`);
+                        $('#download_link').show();
+                    },
+                    error: function (error) {
+                        alert('Error: ' + error.responseJSON.error);
                     }
                 });
             });
