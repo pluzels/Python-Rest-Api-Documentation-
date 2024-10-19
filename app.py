@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Fungsi untuk mendapatkan daftar format audio dan video dari YouTube
+# Fungsi untuk mendapatkan daftar format audio dan video
 def get_video_formats(url):
     cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
     ydl_opts = {
@@ -34,7 +34,7 @@ def get_video_formats(url):
 
     return {'audio': audio_options, 'video': video_options}
 
-# Fungsi untuk mendapatkan URL download berdasarkan format yang dipilih dari YouTube
+# Fungsi untuk mendapatkan URL download berdasarkan format yang dipilih
 def get_youtube_download_url(url, quality):
     cookies_file = 'cookies.txt'
     ydl_opts = {
@@ -58,14 +58,6 @@ def get_youtube_download_url(url, quality):
 @app.route('/')
 def index():
     return render_template('home.html')
-
-@app.route('/youtube', methods=['GET'])
-def youtube():
-    return render_template('index.html')
-
-@app.route('/tiktok', methods=['GET'])
-def tiktok():
-    return render_template('tiktok.html')
 
 @app.route('/video_formats', methods=['POST'])
 def video_formats():
@@ -104,33 +96,6 @@ def download_video():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Endpoint untuk mengunduh video dari TikTok
-@app.route('/download_tiktok', methods=['POST'])
-def download_tiktok():
-    data = request.json
-    url = data.get('url')
-
-    if not url:
-        return jsonify({'error': 'URL is required'}), 400
-
-    try:
-        ydl_opts = {
-            'format': 'best',
-            'noplaylist': True,
-            'quiet': True,
-            'headers': {
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'
-            }
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=False)
-            download_url = info_dict['url']
-
-        return jsonify({'download_url': download_url})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)u
+    app.run(host='0.0.0.0', port=port)
