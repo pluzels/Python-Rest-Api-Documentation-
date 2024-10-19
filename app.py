@@ -1,36 +1,26 @@
 from flask import Flask, request, jsonify, render_template
-import yt_dlp
+from pytube import YouTube
 import os
 
 app = Flask(__name__)
 
+# Fungsi untuk mendapatkan link unduhan YouTube
 def get_youtube_download_url(url, format_type):
-    cookies_file = 'cookies.txt'  # Pastikan ini adalah jalur yang benar untuk file cookies.txt
-    ydl_opts = {
-        'format': 'bestaudio' if format_type == 'audio' else 'bestvideo+bestaudio',
-        'noplaylist': True,
-        'cookiefile': cookies_file,  # Tambahkan opsi cookies
-        'quiet': True,  # Untuk menghindari output yang berlebihan
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-
+    try:
+        yt = YouTube(url)
         if format_type == 'audio':
-            # Mendapatkan URL audio yang sudah diproses
-            audio_url = None
-            for format in info_dict['formats']:
-                if 'acodec' in format and format['acodec'] != 'none':  # Memastikan format audio valid
-                    audio_url = format['url']
-                    break
-            if audio_url is None:
-                return jsonify({'error': 'No valid audio format found'}), 404
-            return audio_url
+            # Mengambil stream audio dengan bitrate terbaik
+            stream = yt.streams.filter(only_audio=True).first()
         else:
-            # Untuk video, kita ambil URL video terbaik
-            for format in info_dict['formats']:
-                if 'vcodec' in format and format['vcodec'] != 'none':
-                    return format['url']  # Link video
+            # Mengambil stream video dengan resolusi tertinggi
+            stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+        
+        if stream:
+            return stream.url
+        else:
+            return None
+    except Exception as e:
+        return str(e)
 
 @app.route('/')
 def index():
@@ -47,9 +37,10 @@ def download_video():
 
     try:
         download_url = get_youtube_download_url(url, download_type)
-        if not download_url:
-            return jsonify({'error': 'Could not retrieve download URL'}), 404
-        return jsonify({'download_url': download_url})
+        if download_url:
+            return jsonify({'download_url': download_url})
+        else:
+            return jsonify({'error': 'Unable to find stream'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
