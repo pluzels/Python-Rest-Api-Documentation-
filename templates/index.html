@@ -3,67 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download YouTube Video or Audio</title>
+    <title>YouTube Video/Audio Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input, button, select {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+        button {
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+        #qualityOptions {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>Download YouTube Video or Audio</h1>
+
     <label for="url">YouTube URL:</label>
-    <input type="text" id="url" placeholder="https://youtu.be/tGv7CUutzqU" required>
+    <input type="text" id="url" placeholder="https://youtu.be/tGv7CUutzqU" size="50">
     <br>
-    <label>Download Type:</label>
-    <button onclick="getFormats('audio')">Audio</button>
-    <button onclick="getFormats('video')">Video</button>
+
+    <label for="downloadType">Download Type:</label>
+    <select id="downloadType">
+        <option value="video">Video</option>
+        <option value="audio">Audio</option>
+    </select>
     <br>
-    <div id="qualityOptions"></div>
+
+    <button onclick="fetchFormats()">Fetch Formats</button>
+    <div id="qualityOptions" class="hidden">
+        <h3>Select Quality:</h3>
+        <select id="qualitySelect">
+        </select>
+        <br>
+        <button onclick="downloadFile()">Download</button>
+    </div>
 
     <script>
-        async function getFormats(type) {
+        async function fetchFormats() {
             const url = document.getElementById('url').value;
+            const downloadType = document.getElementById('downloadType').value;
+
+            if (!url) {
+                alert('Please enter a valid YouTube URL.');
+                return;
+            }
+
             const response = await fetch('/video_formats', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ url, type })
+                body: JSON.stringify({ url, type: downloadType })
             });
 
             const data = await response.json();
-            const qualityOptions = document.getElementById('qualityOptions');
-            qualityOptions.innerHTML = ''; // Kosongkan sebelumnya
+            const qualitySelect = document.getElementById('qualitySelect');
+            const qualityOptionsDiv = document.getElementById('qualityOptions');
+            
+            qualitySelect.innerHTML = '';  // Clear previous options
 
-            if (data.audio || data.video) {
-                const options = data.audio || data.video;
-                options.forEach(format => {
-                    const button = document.createElement('button');
-                    button.innerText = format.quality;
-                    button.onclick = () => download(format.url);
-                    qualityOptions.appendChild(button);
+            if (data[downloadType]) {
+                data[downloadType].forEach(format => {
+                    const option = document.createElement('option');
+                    option.value = format.url;
+                    option.text = format.quality;
+                    qualitySelect.appendChild(option);
                 });
-                const downloadButton = document.createElement('button');
-                downloadButton.innerText = 'Download';
-                downloadButton.onclick = () => download(options[0].url); // Mengunduh format pertama yang tersedia
-                qualityOptions.appendChild(downloadButton);
+                qualityOptionsDiv.classList.remove('hidden');
             } else {
-                qualityOptions.innerHTML = '<p>No formats available</p>';
+                alert('No formats available for the selected type.');
+                qualityOptionsDiv.classList.add('hidden');
             }
         }
 
-        async function download(url) {
-            const response = await fetch('/download', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url, quality: url }) // quality sama dengan url untuk download
-            });
-
-            const data = await response.json();
-            if (data.download_url) {
-                window.location.href = data.download_url; // Mengarahkan pengguna untuk mendownload
-            } else {
-                alert(data.error || 'Download failed');
+        async function downloadFile() {
+            const url = document.getElementById('qualitySelect').value;
+            if (!url) {
+                alert('Please select a quality to download.');
+                return;
             }
+
+            window.location.href = url;  // Redirect to the download URL
         }
     </script>
+
 </body>
 </html>
