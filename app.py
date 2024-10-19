@@ -4,17 +4,14 @@ import os
 
 app = Flask(__name__)
 
-# Fungsi untuk mendapatkan link unduhan YouTube
 def get_youtube_download_url(url, format_type):
     try:
         yt = YouTube(url)
         if format_type == 'audio':
-            # Mengambil stream audio terbaik
             stream = yt.streams.filter(only_audio=True).first()
         else:
-            # Mengambil stream video terbaik dengan resolusi tertinggi yang memiliki audio
             stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
-        
+
         if stream:
             return stream.url
         else:
@@ -28,7 +25,7 @@ def index():
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    data = request.json
+    data = request.get_json()
     url = data.get('url')
     download_type = data.get('type', 'video')  # 'video' atau 'audio'
 
