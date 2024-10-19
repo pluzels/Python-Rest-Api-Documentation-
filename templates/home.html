@@ -3,21 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Downloader</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
-    <title>Home</title>
 </head>
 <body>
     <div class="container">
-        <h1>YouTube & TikTok Downloader</h1>
-        <div class="card">
-            <h2>YouTube Downloader</h2>
-            <form action="/index" method="GET">
-                <input type="submit" value="Go to YouTube Downloader" class="button">
-            </form>
-        </div>
-        <div class="card">
-            <h2>TikTok Downloader</h2>
-            <button class="button disabled">Coming Soon</button>
+        <h1>Selamat Datang di Downloader</h1>
+        <div class="button-container">
+            <a href="{{ url_for('index') }}" class="button">YouTube Downloader</a>
+            <div class="button coming-soon">TikTok Downloader</div>
         </div>
     </div>
 </body>
