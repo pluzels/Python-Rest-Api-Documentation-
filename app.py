@@ -25,10 +25,10 @@ def get_video_formats(url):
         
         for fmt in formats:
             # Tambahkan format audio
-            if fmt.get('acodec') != 'none':
+            if fmt.get('acodec') and fmt['acodec'] != 'none':
                 quality = fmt.get('abr', 'audio')  # Menggunakan bitrate audio
                 audio_options.append({'quality': f"{quality} kbps", 'url': fmt['url']})
-            elif fmt.get('vcodec') != 'none':  # Format video tanpa audio
+            elif fmt.get('vcodec') and fmt['vcodec'] != 'none':  # Format video
                 quality = fmt.get('height', 'no audio')
                 video_options.append({'quality': f"{quality}p (no audio)", 'url': fmt['url']})
 
@@ -71,9 +71,9 @@ def video_formats():
     try:
         formats = get_video_formats(url)
         if download_type == 'audio':
-            return jsonify({'audio': formats['audio']})  # Mengembalikan hanya format audio
+            return jsonify({'audio': formats['audio']}), 200  # Mengembalikan hanya format audio
         elif download_type == 'video':
-            return jsonify({'video': formats['video']})  # Mengembalikan hanya format video
+            return jsonify({'video': formats['video']}), 200  # Mengembalikan hanya format video
         else:
             return jsonify({'error': 'Invalid download type'}), 400
     except Exception as e:
@@ -92,7 +92,7 @@ def download_video():
         download_url = get_youtube_download_url(url, quality)
         if not download_url:
             return jsonify({'error': 'Could not retrieve download URL'}), 404
-        return jsonify({'download_url': download_url})
+        return jsonify({'download_url': download_url}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
