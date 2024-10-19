@@ -9,10 +9,10 @@ def get_youtube_download_url(url, format_type):
     try:
         yt = YouTube(url)
         if format_type == 'audio':
-            # Mengambil stream audio dengan bitrate terbaik
+            # Mengambil stream audio terbaik
             stream = yt.streams.filter(only_audio=True).first()
         else:
-            # Mengambil stream video dengan resolusi tertinggi
+            # Mengambil stream video terbaik dengan resolusi tertinggi yang memiliki audio
             stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
         
         if stream:
